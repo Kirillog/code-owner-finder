@@ -1,7 +1,7 @@
 <idea-plugin>
-    <id>org.example.code-owner-finder</id>
-    <name>Hello</name>
-    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourName</vendor>
+    <id>ru.kirillog.code-owner-finder</id>
+    <name>Code Owner Finder</name>
+    <vendor url="https://github.com/Kirillog">Kirill Mitkin</vendor>
 
     <description><![CDATA[ 
         IntelliJ Plugin for finding the code owner (JB Bootcamp test task)
@@ -11,17 +11,24 @@
          on how to target different products -->
     <depends>com.intellij.modules.platform</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <!-- Add your extensions here -->
-    </extensions>
+    <projectListeners>
+        <listener class="org.intellij.sdk.plugin.FileEditorManager"
+                  topic="com.intellij.openapi.fileEditor.FileEditorManagerListener" />
+    </projectListeners>
 
     <actions>
         <!-- Add your actions here -->
-        <action id="org.intellij.sdk.action.CodeOwnerFinderAction" 
-                class="org.intellij.sdk.action.CodeOwnerFinderAction" 
+        <action id="org.intellij.sdk.plugin.CodeOwnerFinderAction"
+                class="org.intellij.sdk.plugin.CodeOwnerFinderAction"
                 text="Find Code Owner..."
                 description="JB Bootcamp test task" >
             <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
         </action>
     </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow factoryClass="org.intellij.sdk.plugin.toolWindow.MyToolWindowFactory" id="Code Owner" anchor="bottom" secondary="true"
+                    doNotActivateOnStart="true" icon="AllIcons.General.ShowInfos"/>
+    </extensions>
+
 </idea-plugin>

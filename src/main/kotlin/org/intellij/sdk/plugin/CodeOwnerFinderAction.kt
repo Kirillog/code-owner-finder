@@ -1,13 +1,17 @@
-package org.intellij.sdk.action
+package org.intellij.sdk.plugin
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys
+import com.intellij.openapi.project.Project
+import org.intellij.sdk.plugin.toolWindow.reloadContent
 
 
-class CodeOwnerFinderAction: AnAction() {
+class CodeOwnerFinderAction : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
-        TODO("Write your code here")
+        val file = event.getRequiredData(CommonDataKeys.VIRTUAL_FILE)
+        val project: Project = event.getRequiredData(CommonDataKeys.PROJECT)
+        reloadContent(project, file)
     }
 
     override fun update(event: AnActionEvent) {
