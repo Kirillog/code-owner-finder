@@ -15,11 +15,21 @@ import java.util.*
 data class EditedLines(val added: Int, val deleted: Int, val changed: Int) {
     operator fun plus(other: EditedLines): EditedLines =
         EditedLines(added + other.added, deleted + other.deleted, changed + other.changed)
+
+    fun summary(): Int {
+        return added + deleted + changed
+    }
 }
+
 
 data class SingleContribution(val author: String, val numberOfEditedLines: EditedLines, val date: Date)
 
-data class SummaryContribution(val author: String, val numberOfRevisions: Int, val numberOfEditedLines: EditedLines) {
+data class SummaryContribution(
+    val author: String,
+    val numberOfRevisions: Int,
+    val numberOfEditedLines: EditedLines,
+    var score: Double = 0.0
+) {
     constructor(contribution: SingleContribution) : this(contribution.author, 1, contribution.numberOfEditedLines)
 }
 
@@ -36,21 +46,25 @@ class VCSManager(private val project: Project) {
         return authorContributions(revisionList, file)
     }
 
-    fun summaryContributionFor(file: VirtualFile): List<SummaryContribution> {
-        val authorContribution = authorContributionFor(file)
-        return authorContribution.groupingBy { it.author }
-            .aggregate { key, accumulator: SummaryContribution?, element, _ ->
-                if (accumulator == null) {
-                    SummaryContribution(element)
-                } else {
-                    SummaryContribution(
-                        key,
-                        accumulator.numberOfRevisions + 1,
-                        accumulator.numberOfEditedLines + element.numberOfEditedLines
-                    )
-                }
-            }.values.toList()
+    companion object {
+        fun singleContributionsToSummary(contribution: List<SingleContribution>) =
+            contribution.groupingBy { it.author }
+                .aggregate { key, accumulator: SummaryContribution?, element, _ ->
+                    if (accumulator == null) {
+                        SummaryContribution(element)
+                    } else {
+                        SummaryContribution(
+                            key,
+                            accumulator.numberOfRevisions + 1,
+                            accumulator.numberOfEditedLines + element.numberOfEditedLines
+                        )
+                    }
+                }.values.toList()
+
     }
+
+    fun summaryContributionFor(file: VirtualFile): List<SummaryContribution> =
+        singleContributionsToSummary(authorContributionFor(file))
 
     private fun authorContributions(
         revisionList: List<VcsFileRevision>,

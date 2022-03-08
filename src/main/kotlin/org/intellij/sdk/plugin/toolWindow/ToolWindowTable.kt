@@ -15,7 +15,7 @@ class ToolWindowTable(data : List<SummaryContribution>) {
     init {
         modelList.columnInfos = arrayOf(
             AuthorsColumn(), CommitColumn(),
-            AddedLinesColumn(), DeletedLinesColumn(), ChangedLinesColumn()
+            AddedLinesColumn(), DeletedLinesColumn(), ChangedLinesColumn(), ScoreColumn()
         )
         for (contributionInformation in data)
             modelList.addRow(contributionInformation)
@@ -57,5 +57,11 @@ class ChangedLinesColumn : ColumnInfo<SummaryContribution, String>("Changed Line
 class DeletedLinesColumn : ColumnInfo<SummaryContribution, String>("Deleted Lines") {
     override fun valueOf(item: SummaryContribution): String {
         return item.numberOfEditedLines.deleted.toString()
+    }
+}
+
+class ScoreColumn : ColumnInfo<SummaryContribution, String>("Score") {
+    override fun valueOf(item: SummaryContribution): String {
+        return item.score.toString()
     }
 }

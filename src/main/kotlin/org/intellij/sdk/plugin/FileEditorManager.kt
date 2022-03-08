@@ -12,6 +12,7 @@ class FileEditorManager(private val project: Project) :
      * Reloads content of tool window on selectionChanged [event]
      */
     override fun selectionChanged(event: FileEditorManagerEvent) {
-        reloadContent(project, event.newFile)
+        if (event.newFile.isInLocalFileSystem)
+            reloadContent(project, event.newFile)
     }
 }
