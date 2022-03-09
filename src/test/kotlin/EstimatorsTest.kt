@@ -15,7 +15,7 @@ import kotlin.test.assertEquals
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class EstimatorsTest {
-    private val date = LocalDate.now()
+    private val date = LocalDate.now(ZoneOffset.UTC)
     private val firstDate: Date = Date.from(date.minusDays(200).atStartOfDay().toInstant(ZoneOffset.UTC))
     private val secondDate = Date.from(date.minusDays(100).atStartOfDay().toInstant(ZoneOffset.UTC))
     val defaultContribution1 = listOf(
