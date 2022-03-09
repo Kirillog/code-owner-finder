@@ -9,44 +9,31 @@ import dev.gitlive.difflib.DiffUtils
 import dev.gitlive.difflib.patch.DeltaType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import java.util.*
-
-
-data class EditedLines(val added: Int, val deleted: Int, val changed: Int) {
-    operator fun plus(other: EditedLines): EditedLines =
-        EditedLines(added + other.added, deleted + other.deleted, changed + other.changed)
-
-    fun summary(): Int {
-        return added + deleted + changed
-    }
-}
-
-
-data class SingleContribution(val author: String, val numberOfEditedLines: EditedLines, val date: Date)
-
-data class SummaryContribution(
-    val author: String,
-    val numberOfRevisions: Int,
-    val numberOfEditedLines: EditedLines,
-    var score: Double = 0.0
-) {
-    constructor(contribution: SingleContribution) : this(contribution.author, 1, contribution.numberOfEditedLines)
-}
+import org.intellij.sdk.plugin.estimator.AverageEstimator
 
 class VCSManager(private val project: Project) {
+
+    /**
+     * Returns list of [SingleContribution] related to this [file]
+     */
 
     fun authorContributionFor(file: VirtualFile): List<SingleContribution> {
         val vcsManager = ProjectLevelVcsManager.getInstance(project)
         val contextFactory = VcsContextFactory.SERVICE.getInstance()
         val revisionList = runBlocking(Dispatchers.IO) {
-            val git = vcsManager.findVcsByName("Git") ?: return@runBlocking emptyList()
-            val history = git.vcsHistoryProvider?.createSessionFor(contextFactory.createFilePathOn(file))
-            (history?.revisionList ?: listOf())
-        } + VcsFileRevision.NULL
+            vcsManager.allActiveVcss.map { vcs ->
+                val history = vcs.vcsHistoryProvider?.createSessionFor(contextFactory.createFilePathOn(file))
+                (history?.revisionList ?: listOf())
+            }
+        }.flatten() + VcsFileRevision.NULL
         return authorContributions(revisionList, file)
     }
 
     companion object {
+
+        /**
+         * Converts [contribution] list of [SingleContribution] to list of [SummaryContribution]
+         */
         fun singleContributionsToSummary(contribution: List<SingleContribution>) =
             contribution.groupingBy { it.author }
                 .aggregate { key, accumulator: SummaryContribution?, element, _ ->
@@ -56,15 +43,34 @@ class VCSManager(private val project: Project) {
                         SummaryContribution(
                             key,
                             accumulator.numberOfRevisions + 1,
-                            accumulator.numberOfEditedLines + element.numberOfEditedLines
+                            accumulator.numberOfEditedLines + element.numberOfEditedLines,
+                            max(accumulator.lastRevisionDate, element.date)
                         )
                     }
                 }.values.toList()
 
+        /**
+         * Returns [SummaryContribution] of all authors, committing to [file] in this [project]
+         */
+
+        fun summaryContributions(
+            project: Project,
+            file: VirtualFile
+        ): List<SummaryContribution> {
+            val singleContributionList = VCSManager(project).authorContributionFor(file)
+            val summaryContributionList = singleContributionsToSummary(singleContributionList)
+            val scores = AverageEstimator().estimateContributors(singleContributionList)
+            summaryContributionList.forEach {
+                it.score = scores[it.author] ?: 0.0
+            }
+            return summaryContributionList
+        }
+
     }
 
-    fun summaryContributionFor(file: VirtualFile): List<SummaryContribution> =
-        singleContributionsToSummary(authorContributionFor(file))
+    /**
+     * Converts [revisionList] of [file] to list of [SingleContribution]
+     */
 
     private fun authorContributions(
         revisionList: List<VcsFileRevision>,
@@ -75,6 +81,10 @@ class VCSManager(private val project: Project) {
         val numberOfEditedLines = editedLines(oldContent, newContent)
         SingleContribution(newRevision.author ?: "no author", numberOfEditedLines, newRevision.revisionDate)
     }
+
+    /**
+     * Forms [EditedLines] instance comparing [oldContent] and [newContent], representing content of file
+     */
 
     private fun editedLines(oldContent: List<String>, newContent: List<String>): EditedLines {
         val patch = DiffUtils.diff(oldContent, newContent)
