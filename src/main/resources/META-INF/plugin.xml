@@ -18,8 +18,8 @@
 
     <actions>
         <!-- Add your actions here -->
-        <action id="org.intellij.sdk.plugin.CodeOwnerFinderAction"
-                class="org.intellij.sdk.plugin.CodeOwnerFinderAction"
+        <action id="org.intellij.sdk.plugin.ShowToolWindowAction"
+                class="org.intellij.sdk.plugin.ShowToolWindowAction"
                 text="Find Code Owner..."
                 description="JB Bootcamp test task" >
             <add-to-group group-id="ProjectViewPopupMenu" anchor="first"/>
